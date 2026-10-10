@@ -25,7 +25,7 @@ from classifier_utils import (  # noqa: E402
     make_dataloader,
     select_split,
 )
-from src.config import load_training_config  # noqa: E402
+from config import load_training_config  # noqa: E402
 from src.xai import GradCAM, GradCAMPlusPlus, GuidedGradCAM, LIME, RISE, XGradCAM  # noqa: E402
 
 

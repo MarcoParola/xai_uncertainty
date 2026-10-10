@@ -10,7 +10,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from src.config import load_training_config
+from config import load_training_config
 
 
 DEFAULT_DATA_ROOT = Path(__file__).resolve().parents[2] / "data"

@@ -14,7 +14,7 @@ from torch import nn
 from torchvision import transforms
 
 from src.datasets import get_dataset
-from src.config import load_training_config
+from config import load_training_config
 from src.datasets.common import DEFAULT_DATA_ROOT
 from src.models import get_model
 from src.models.models import normalize_model_name

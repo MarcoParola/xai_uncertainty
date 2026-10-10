@@ -24,7 +24,7 @@ from classifier_utils import (
     make_dataloader,
     set_seed,
 )
-from src.config import DEFAULT_TRAINING_CONFIG_PATH, load_training_config
+from config import DEFAULT_TRAINING_CONFIG_PATH, load_training_config
 
 
 DEFAULT_OUTPUT = Path("checkpoints/classifier.pt")
