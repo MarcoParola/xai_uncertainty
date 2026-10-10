@@ -51,6 +51,7 @@ def load_model(checkpoint_path: Path, device: torch.device):
     model = build_classifier(
         checkpoint["model_name"],
         num_classes=checkpoint["num_classes"],
+        use_default_weights=False,
     ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()

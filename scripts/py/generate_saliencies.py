@@ -209,6 +209,7 @@ def main() -> None:
     model = build_classifier(
         model_name,
         num_classes=checkpoint["num_classes"],
+        use_default_weights=False,
     ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()

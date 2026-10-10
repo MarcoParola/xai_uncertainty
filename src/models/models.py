@@ -33,10 +33,10 @@ def normalize_model_name(name: str) -> str:
         raise ValueError(f"Unknown model '{name}'. Common choices: {options}.") from exc
 
 
-def get_model(name: str):
-    """Return a torchvision ResNet or ViT with default pretrained weights."""
+def get_model(name: str, use_default_weights: bool = True):
+    """Return a torchvision ResNet or ViT model."""
     from torchvision import models
 
     model_name = normalize_model_name(name)
-    weights = models.get_model_weights(model_name).DEFAULT
+    weights = models.get_model_weights(model_name).DEFAULT if use_default_weights else None
     return models.get_model(model_name, weights=weights)
