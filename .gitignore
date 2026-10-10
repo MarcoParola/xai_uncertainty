@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+env/
+.venv/
+venv/
+
+# Project artifacts
+data/
+checkpoints/
+results/
+.torch/
+*.pt
+*.pth
+*.ckpt
+
+# Local/editor files
+.env
+.env.*
+.vscode/
+.idea/
+
+# Codex/runtime-local state
+.agents/
+.aws/
+.codex/
