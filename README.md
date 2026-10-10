@@ -29,7 +29,7 @@ bash download/download_all_datasets.sh
 python test/test_datasets.py # test to check that everything is fine.. otherwise PD
 ```
 
-The Caltech101 downloader also fetches `Annotations/`; bounding boxes for saliency localization metrics are derived from those contours.
+The Caltech101 downloader also fetches `Annotations/`; bounding boxes for saliency localization metrics are derived from those contours. Stanford Cars is prepared manually by the downloader because torchvision keeps the loader but no longer provides a working built-in download.
 
 ## Training (Don't run this, I give you the checkpoints)
 
@@ -59,7 +59,7 @@ bash scripts/sh/test_all.sh
 
 ## Generate saliency map explanations (You can skip)
 
-Saliency maps can be generated with `gradcam`, `guided_gradcam`, `gradcampp`, `xgradcam`, `rise`, or `lime`:
+Saliency maps can be generated with `gradcam`, `guided_gradcam`, `gradcampp`, `xgradcam`, `rise`, or `lime`; by default each run samples `saliency_generation_limit` random test images with the configured seed.
 
 ```bash
 python scripts/py/generate_saliencies.py oxford_pet gradcam checkpoints/oxford_pet_resnet50.pt
