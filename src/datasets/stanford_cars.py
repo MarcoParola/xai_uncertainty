@@ -27,6 +27,7 @@ def get_dataset(
     return_bboxes: bool = False,
 ):
     datasets = import_torchvision_datasets()
+    ensure_stanford_cars_available(Path(root))
 
     train_full = datasets.StanfordCars(
         root=str(root),
@@ -58,6 +59,25 @@ def get_dataset(
     train_size, val_size = train_val_lengths(len(train_full), val_fraction)
     train, val = random_split(train_full, (train_size, val_size), seed)
     return train, val, test
+
+
+def ensure_stanford_cars_available(root: Path) -> None:
+    base = root / "stanford_cars"
+    required_paths = (
+        base / "devkit" / "cars_train_annos.mat",
+        base / "devkit" / "cars_meta.mat",
+        base / "cars_train",
+        base / "cars_test_annos_withlabels.mat",
+        base / "cars_test",
+    )
+    missing = [path for path in required_paths if not path.exists()]
+    if missing:
+        missing_text = ", ".join(str(path) for path in missing)
+        raise FileNotFoundError(
+            "Stanford Cars files are missing. Run "
+            "`env/bin/python download/download_dataset.py stanford_cars --root data --split all` "
+            f"to prepare them. Missing: {missing_text}"
+        )
 
 
 def stanford_car_boxes(dataset) -> list[tuple[float, float, float, float]]:

@@ -11,6 +11,14 @@ from pathlib import Path
 DEFAULT_ROOT = Path(__file__).resolve().parents[1] / "data"
 CALTECH101_URL = "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip"
 CALTECH101_MD5 = "3138e1922a9193bfa496528edbbc45d0"
+STANFORD_CARS_FILES = {
+    "cars_train.tgz": "https://ai.stanford.edu/~jkrause/car196/cars_train.tgz",
+    "cars_test.tgz": "https://ai.stanford.edu/~jkrause/car196/cars_test.tgz",
+    "car_devkit.tgz": "https://ai.stanford.edu/~jkrause/cars/car_devkit.tgz",
+    "cars_test_annos_withlabels.mat": (
+        "https://ai.stanford.edu/~jkrause/car196/cars_test_annos_withlabels.mat"
+    ),
+}
 
 ALIASES = {
     "oxford_pet": "oxford_pet",
@@ -115,14 +123,18 @@ def load_torchvision_datasets():
 
 def load_torchvision_dataset_utils():
     try:
-        from torchvision.datasets.utils import download_and_extract_archive, extract_archive
+        from torchvision.datasets.utils import (
+            download_and_extract_archive,
+            download_url,
+            extract_archive,
+        )
     except ModuleNotFoundError as exc:
         raise SystemExit(
             "torchvision is not installed in the active environment. "
             "Install it in the virtualenv first, for example: "
             "env/bin/python -m pip install -r requirements.txt"
         ) from exc
-    return download_and_extract_archive, extract_archive
+    return download_and_extract_archive, download_url, extract_archive
 
 
 def dataset_split_exists(dataset: str, root: Path, split: str | None) -> bool:
@@ -201,7 +213,7 @@ def ensure_caltech101_annotations(root: Path) -> None:
     if (base / "101_ObjectCategories").is_dir() and (base / "Annotations").is_dir():
         return
 
-    download_and_extract_archive, extract_archive = load_torchvision_dataset_utils()
+    download_and_extract_archive, _download_url, extract_archive = load_torchvision_dataset_utils()
     base.mkdir(parents=True, exist_ok=True)
     print("Downloading Caltech101 annotations/object categories archive")
     download_and_extract_archive(
@@ -223,6 +235,51 @@ def ensure_caltech101_annotations(root: Path) -> None:
         zip_path.unlink()
 
 
+def ensure_stanford_cars_split(root: Path, split: str) -> None:
+    base = root / "stanford_cars"
+    base.mkdir(parents=True, exist_ok=True)
+    _download_and_extract_archive, download_url, extract_archive = load_torchvision_dataset_utils()
+
+    devkit_path = base / "devkit"
+    if not (devkit_path / "cars_train_annos.mat").is_file() or not (
+        devkit_path / "cars_meta.mat"
+    ).is_file():
+        print("Downloading Stanford Cars devkit")
+        download_url(
+            STANFORD_CARS_FILES["car_devkit.tgz"],
+            root=str(base),
+            filename="car_devkit.tgz",
+        )
+        extract_archive(str(base / "car_devkit.tgz"), str(base))
+
+    if split == "train" and not (base / "cars_train").is_dir():
+        print("Downloading Stanford Cars train images")
+        download_url(
+            STANFORD_CARS_FILES["cars_train.tgz"],
+            root=str(base),
+            filename="cars_train.tgz",
+        )
+        extract_archive(str(base / "cars_train.tgz"), str(base))
+
+    if split == "test":
+        if not (base / "cars_test").is_dir():
+            print("Downloading Stanford Cars test images")
+            download_url(
+                STANFORD_CARS_FILES["cars_test.tgz"],
+                root=str(base),
+                filename="cars_test.tgz",
+            )
+            extract_archive(str(base / "cars_test.tgz"), str(base))
+
+        if not (base / "cars_test_annos_withlabels.mat").is_file():
+            print("Downloading Stanford Cars test labels")
+            download_url(
+                STANFORD_CARS_FILES["cars_test_annos_withlabels.mat"],
+                root=str(base),
+                filename="cars_test_annos_withlabels.mat",
+            )
+
+
 def download_dataset(dataset: str, root: Path, split: str) -> None:
     root.mkdir(parents=True, exist_ok=True)
     datasets = None
@@ -235,12 +292,14 @@ def download_dataset(dataset: str, root: Path, split: str) -> None:
             continue
 
         if dataset == "stanford_cars":
-            print(
-                f"Skipping {DISPLAY_NAMES[dataset]} split={current_label}: "
-                "torchvision no longer provides a working download URL for this dataset. "
-                f"Place it under {root / 'stanford_cars'} to use the loader."
+            ensure_stanford_cars_split(root, current_split)
+            if dataset_split_exists(dataset, root, current_split):
+                print(f"Done {DISPLAY_NAMES[dataset]} split={current_label}: files available")
+                continue
+            raise RuntimeError(
+                f"Stanford Cars split={current_label} was not prepared correctly under "
+                f"{root / 'stanford_cars'}."
             )
-            continue
 
         if dataset == "caltech101":
             ensure_caltech101_annotations(root)
