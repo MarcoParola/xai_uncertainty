@@ -69,6 +69,26 @@ python scripts/py/evaluate_saliencies.py data/saliencies/oxford_pet/oxford_pet_r
 
 ## Evaluate saliency map explanations
 
+### Plot explanations around the best checkpoint
+
+Set the image subset for each dataset in `config/plot_saliencies.json`, for example
+`"oxford_pet": ["Abyssinian_1", "Abyssinian_2"]`. Entries can be image IDs,
+filenames, or paths relative to each checkpoint's saliency directory. The same
+images are retrieved from every checkpoint; ambiguous IDs require an exact path.
+
+```bash
+python scripts/plot/plot_saliencies.py resnet50 gradcam oxford_pet
+```
+
+Each image gets one row, with earlier checkpoints on the left, best in the center,
+and later checkpoints on the right. `checkpoint_offsets: null` plots all available
+offsets; use a list such as `[3, 5]` to choose offsets. Missing checkpoints leave an
+empty slot so best stays centered. Configure `seed` (default 0), `checkpoint_stem`
+(if multiple experiments match), and the saliency directory template as needed.
+Figures are saved in `plots/saliencies/`; `--config` and `--output` override the
+configuration file and figure destination. Saliencies can be individual NumPy
+arrays, PyTorch tensors, or image files.
+
 ...
 
 ## Uncertainty quantification

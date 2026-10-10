@@ -53,50 +53,50 @@ run_saliencies oxford_pet resnet50 "${CHECKPOINT_DIR}/oxford_pet_resnet50_pretra
 run_saliencies oxford_pet resnet50 "${CHECKPOINT_DIR}/oxford_pet_resnet50_pretrained_seed_4.pt"
 
 # Oxford Pet / ViT-B-16
-run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_0.pt"
-run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_1.pt"
-run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_2.pt"
-run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_3.pt"
-run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_4.pt"
+# run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_0.pt"
+# run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_1.pt"
+# run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_2.pt"
+# run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_3.pt"
+# run_saliencies oxford_pet vit_b_16 "${CHECKPOINT_DIR}/oxford_pet_vit_b_16_pretrained_seed_4.pt"
 
-# Caltech101 / ResNet50
-run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_0.pt"
-run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_1.pt"
-run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_2.pt"
-run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_3.pt"
-run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_4.pt"
+# # Caltech101 / ResNet50
+# run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_0.pt"
+# run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_1.pt"
+# run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_2.pt"
+# run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_3.pt"
+# run_saliencies caltech101 resnet50 "${CHECKPOINT_DIR}/caltech101_resnet50_pretrained_seed_4.pt"
 
-# Caltech101 / ViT-B-16
-run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_0.pt"
-run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_1.pt"
-run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_2.pt"
-run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_3.pt"
-run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_4.pt"
+# # Caltech101 / ViT-B-16
+# run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_0.pt"
+# run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_1.pt"
+# run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_2.pt"
+# run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_3.pt"
+# run_saliencies caltech101 vit_b_16 "${CHECKPOINT_DIR}/caltech101_vit_b_16_pretrained_seed_4.pt"
 
-# FGVC Aircraft / ResNet50
-run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_0.pt"
-run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_1.pt"
-run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_2.pt"
-run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_3.pt"
-run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_4.pt"
+# # FGVC Aircraft / ResNet50
+# run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_0.pt"
+# run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_1.pt"
+# run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_2.pt"
+# run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_3.pt"
+# run_saliencies fgvc_aircraft resnet50 "${CHECKPOINT_DIR}/fgvc_aircraft_resnet50_pretrained_seed_4.pt"
 
-# FGVC Aircraft / ViT-B-16
-run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_0.pt"
-run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_1.pt"
-run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_2.pt"
-run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_3.pt"
-run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_4.pt"
+# # FGVC Aircraft / ViT-B-16
+# run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_0.pt"
+# run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_1.pt"
+# run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_2.pt"
+# run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_3.pt"
+# run_saliencies fgvc_aircraft vit_b_16 "${CHECKPOINT_DIR}/fgvc_aircraft_vit_b_16_pretrained_seed_4.pt"
 
-# Stanford Cars / ResNet50
-run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_0.pt"
-run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_1.pt"
-run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_2.pt"
-run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_3.pt"
-run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_4.pt"
+# # Stanford Cars / ResNet50
+# run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_0.pt"
+# run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_1.pt"
+# run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_2.pt"
+# run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_3.pt"
+# run_saliencies stanford_cars resnet50 "${CHECKPOINT_DIR}/stanford_cars_resnet50_pretrained_seed_4.pt"
 
-# Stanford Cars / ViT-B-16
-run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_0.pt"
-run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_1.pt"
-run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_2.pt"
-run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_3.pt"
-run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_4.pt"
+# # Stanford Cars / ViT-B-16
+# run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_0.pt"
+# run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_1.pt"
+# run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_2.pt"
+# run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_3.pt"
+# run_saliencies stanford_cars vit_b_16 "${CHECKPOINT_DIR}/stanford_cars_vit_b_16_pretrained_seed_4.pt"
