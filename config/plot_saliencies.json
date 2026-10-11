@@ -1,0 +1,21 @@
+{
+  "saliency_root": "data/saliencies",
+  "data_root": "data",
+  "checkpoint_root": "checkpoints",
+  "output_dir": "outputs/plots",
+  "directory_template": "{dataset}/{checkpoint}/{model}/{method}/{target}",
+  "target": "true",
+  "methods": ["gradcam", "gradcampp", "lime", "rise"],
+  "seed": 0,
+  "checkpoint_stem": null,
+  "checkpoint_offsets": null,
+  "images": {
+    "oxford_pet": [1182],
+    "caltech101": [],
+    "fgvc_aircraft": [],
+    "stanford_cars": []
+  },
+  "cmap": ["blue", "green", "yellow", "orange", "red"],
+  "overlay_alpha": 0.7,
+  "dpi": 200
+}

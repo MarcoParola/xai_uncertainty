@@ -11,6 +11,7 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -66,11 +67,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--class-id", type=int, default=None)
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--max-batches", type=int, default=None)
+    parser.add_argument("--no-progress", action="store_true", help="Disable the progress bar.")
 
-    parser.add_argument("--rise-masks", type=int, default=4000)
+    parser.add_argument("--rise-masks", type=int, default=2000)
     parser.add_argument("--rise-mask-size", type=int, default=7)
     parser.add_argument("--rise-p", type=float, default=0.5)
-    parser.add_argument("--rise-batch-size", type=int, default=64)
+    parser.add_argument(
+        "--rise-batch-size", type=int, default=32,
+        help="Maximum masked images per RISE model forward pass.",
+    )
 
     parser.add_argument("--lime-samples", type=int, default=1000)
     parser.add_argument("--lime-grid-size", type=int, default=7)
@@ -191,6 +196,12 @@ def save_manifest(output_dir: Path, manifest: dict) -> None:
 def main() -> None:
     args = parse_args()
     device = get_device(args.device)
+    device_name = "CPU"
+    if device.type == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA was requested but is unavailable. No CPU fallback will be used.")
+        device_name = torch.cuda.get_device_name(device)
+    print(f"Using device: {device} ({device_name})", flush=True)
     checkpoint = torch.load(args.checkpoint, map_location=device)
 
     model_name = checkpoint["model_name"]
@@ -218,37 +229,53 @@ def main() -> None:
     batch_files = []
     n_examples = 0
 
-    for batch_index, (images, labels, indices) in enumerate(dataloader):
-        if args.max_batches is not None and batch_index >= args.max_batches:
-            break
+    total_images = len(sampled_dataset)
+    if args.max_batches is not None:
+        total_images = min(total_images, max(0, args.max_batches) * args.batch_size)
+    with tqdm(
+        total=total_images,
+        desc=f"{args.dataset}/{args.method}",
+        unit="img",
+        dynamic_ncols=True,
+        disable=True if args.no_progress else None,
+    ) as progress:
+        for batch_index, (images, labels, indices) in enumerate(dataloader):
+            if args.max_batches is not None and batch_index >= args.max_batches:
+                break
 
-        targets = resolve_targets(args, model, images, labels, device)
-        maps = explainer.generate(images.to(device), targets=targets)
+            targets = resolve_targets(args, model, images, labels, device)
+            maps = explainer.generate(images.to(device), targets=targets)
 
-        batch_file = output_dir / f"batch_{batch_index:06d}.pt"
-        start_index = n_examples
-        end_index = start_index + images.size(0)
-        torch.save(
-            {
-                "saliency_maps": maps.detach().cpu(),
-                "labels": labels.detach().cpu(),
-                "targets": targets.detach().cpu(),
-                "indices": indices.detach().cpu(),
-            },
-            batch_file,
-        )
+            batch_file = output_dir / f"batch_{batch_index:06d}.pt"
+            start_index = n_examples
+            end_index = start_index + images.size(0)
+            torch.save(
+                {
+                    "saliency_maps": maps.detach().to(device="cpu", dtype=torch.float16),
+                    "labels": labels.detach().cpu(),
+                    "targets": targets.detach().cpu(),
+                    "indices": indices.detach().cpu(),
+                },
+                batch_file,
+            )
 
-        batch_files.append(batch_file.name)
-        n_examples = end_index
-        print(
-            f"saved batch={batch_index} examples={start_index}:{end_index} "
-            f"path={batch_file}"
-        )
+            batch_files.append(batch_file.name)
+            n_examples = end_index
+            progress.update(images.size(0))
+            if progress.disable:
+                print(
+                    f"saved batch={batch_index} examples={start_index}:{end_index} "
+                    f"path={batch_file}"
+                )
 
     manifest = {
         "dataset": args.dataset,
         "split": "test",
         "method": args.method,
+        "saliency_dtype": "float16",
+        "device": str(device),
+        "device_name": device_name,
+        "rise_masks": args.rise_masks if args.method == "rise" else None,
         "target_mode": args.target_mode,
         "class_id": args.class_id,
         "checkpoint": str(args.checkpoint),

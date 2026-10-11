@@ -16,5 +16,5 @@
   "test_fraction": 0.13,
   "image_resize_size": 256,
   "image_size": 224,
-  "saliency_generation_limit": 1000
+  "saliency_generation_limit": 600
 }

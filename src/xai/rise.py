@@ -20,18 +20,21 @@ class RISE(SaliencyMethod):
 
     This implementation accepts a batch of images and returns a batch of saliency
     maps. The same random mask bank is reused for every image in the batch.
+    ``batch_size`` limits the total masked images per model forward pass.
     """
 
     def __init__(
         self,
         model: nn.Module,
-        n_masks: int = 4000,
+        n_masks: int = 2000,
         mask_size: tuple[int, int] = (7, 7),
         p: float = 0.5,
         batch_size: int = 64,
         use_softmax: bool = True,
     ) -> None:
         super().__init__(model)
+        if n_masks < 1 or batch_size < 1:
+            raise ValueError("n_masks and batch_size must be positive.")
         self.n_masks = n_masks
         self.mask_size = mask_size
         self.p = p
@@ -80,23 +83,24 @@ class RISE(SaliencyMethod):
         for start in range(0, self.n_masks, self.batch_size):
             current_masks = masks[start : start + self.batch_size]
             n_current = current_masks.size(0)
-            masked_images = (
-                images[:, None] * current_masks[None]
-            ).reshape(batch_size * n_current, *images.shape[1:])
+            # Bound the image-mask product, not just the number of masks.
+            image_chunk_size = max(1, self.batch_size // n_current)
+            for image_start in range(0, batch_size, image_chunk_size):
+                image_end = min(image_start + image_chunk_size, batch_size)
+                current_images = images[image_start:image_end]
+                masked_images = (
+                    current_images[:, None] * current_masks[None]
+                ).reshape(current_images.size(0) * n_current, *images.shape[1:])
 
-            logits = self.model(masked_images)
-            if self.use_softmax:
-                logits = logits.softmax(dim=1)
+                logits = self.model(masked_images)
+                if self.use_softmax:
+                    logits = logits.softmax(dim=1)
 
-            repeated_targets = targets.repeat_interleave(n_current)
-            scores = logits.gather(1, repeated_targets.view(-1, 1)).view(
-                batch_size,
-                n_current,
-                1,
-                1,
-                1,
-            )
-            saliency += (scores * current_masks[None]).sum(dim=1)
+                repeated_targets = targets[image_start:image_end].repeat_interleave(n_current)
+                scores = logits.gather(1, repeated_targets.view(-1, 1)).view(
+                    current_images.size(0), n_current, 1, 1, 1,
+                )
+                saliency[image_start:image_end] += (scores * current_masks[None]).sum(dim=1)
 
         saliency = saliency / (self.n_masks * max(self.p, 1e-8))
         if was_training:

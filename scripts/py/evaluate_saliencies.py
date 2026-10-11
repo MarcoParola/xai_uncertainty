@@ -87,7 +87,7 @@ def batch_metric_rows(
 ) -> dict:
     indices = batch["indices"]
     images, bboxes = stack_images_and_bboxes(dataset, indices)
-    saliency_maps = batch["saliency_maps"]
+    saliency_maps = batch["saliency_maps"].float()
     targets = batch["targets"]
 
     insertion_out = insertion(

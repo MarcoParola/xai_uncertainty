@@ -15,6 +15,7 @@ venv/
 data/
 checkpoints/
 results/
+/outputs/
 .torch/
 *.pt
 *.pth

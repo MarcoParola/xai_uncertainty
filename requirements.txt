@@ -3,3 +3,4 @@ torchvision
 scipy
 pillow
 matplotlib
+tqdm
