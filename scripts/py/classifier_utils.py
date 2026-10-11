@@ -184,8 +184,9 @@ def replace_classifier_head(model: nn.Module, num_classes: int) -> nn.Module:
 def build_classifier(
     model_name: str,
     num_classes: int,
+    use_default_weights: bool = True,
 ) -> nn.Module:
-    model = get_model(model_name)
+    model = get_model(model_name, use_default_weights=use_default_weights)
     return replace_classifier_head(model, num_classes)
 
 
