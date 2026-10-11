@@ -5,18 +5,34 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import tarfile
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[1] / "data"
 CALTECH101_URL = "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip"
 CALTECH101_MD5 = "3138e1922a9193bfa496528edbbc45d0"
 STANFORD_CARS_FILES = {
-    "cars_train.tgz": "https://ai.stanford.edu/~jkrause/car196/cars_train.tgz",
-    "cars_test.tgz": "https://ai.stanford.edu/~jkrause/car196/cars_test.tgz",
-    "car_devkit.tgz": "https://ai.stanford.edu/~jkrause/cars/car_devkit.tgz",
+    "cars_train.tgz": (
+        "http://ai.stanford.edu/~jkrause/car196/cars_train.tgz",
+        "https://web.archive.org/web/20221212053154id_/http://ai.stanford.edu/~jkrause/car196/cars_train.tgz",
+        "https://web.archive.org/web/20221212053154/http://ai.stanford.edu/~jkrause/car196/cars_train.tgz",
+    ),
+    "cars_test.tgz": (
+        "http://ai.stanford.edu/~jkrause/car196/cars_test.tgz",
+        "https://web.archive.org/web/20221212053154id_/http://ai.stanford.edu/~jkrause/car196/cars_test.tgz",
+        "https://web.archive.org/web/20221212053154/http://ai.stanford.edu/~jkrause/car196/cars_test.tgz",
+    ),
+    "car_devkit.tgz": (
+        "https://ai.stanford.edu/~jkrause/cars/car_devkit.tgz",
+        "https://web.archive.org/web/20230323151230id_/https://ai.stanford.edu/~jkrause/cars/car_devkit.tgz",
+        "https://web.archive.org/web/20230323151230/https://ai.stanford.edu/~jkrause/cars/car_devkit.tgz",
+    ),
     "cars_test_annos_withlabels.mat": (
-        "https://ai.stanford.edu/~jkrause/car196/cars_test_annos_withlabels.mat"
+        "http://ai.stanford.edu/~jkrause/car196/cars_test_annos_withlabels.mat",
+        "https://web.archive.org/web/20221212053154id_/http://ai.stanford.edu/~jkrause/car196/cars_test_annos_withlabels.mat",
+        "https://web.archive.org/web/20221212053154/http://ai.stanford.edu/~jkrause/car196/cars_test_annos_withlabels.mat",
     ),
 }
 
@@ -235,49 +251,71 @@ def ensure_caltech101_annotations(root: Path) -> None:
         zip_path.unlink()
 
 
+def download_stanford_cars_file(filename: str, root: Path) -> None:
+    _download_and_extract_archive, download_url, _extract_archive = load_torchvision_dataset_utils()
+    path = root / filename
+    if is_valid_stanford_cars_file(path):
+        return
+    if path.exists():
+        path.unlink()
+
+    errors = []
+    for url in STANFORD_CARS_FILES[filename]:
+        try:
+            print(f"Trying {url}")
+            download_url(url, root=str(root), filename=filename)
+            if is_valid_stanford_cars_file(path):
+                return
+            errors.append(f"{url}: downloaded file is not a valid {filename}")
+        except (HTTPError, URLError, RuntimeError) as exc:
+            errors.append(f"{url}: {exc}")
+
+        if path.exists():
+            path.unlink()
+
+    details = "\n".join(errors)
+    raise RuntimeError(f"Could not download Stanford Cars file {filename}.\n{details}")
+
+
+def is_valid_stanford_cars_file(path: Path) -> bool:
+    if not path.is_file() or path.stat().st_size == 0:
+        return False
+    if path.suffix == ".tgz":
+        return tarfile.is_tarfile(path)
+    if path.suffix == ".mat":
+        with path.open("rb") as handle:
+            prefix = handle.read(16).lstrip()
+        return not prefix.startswith(b"<!")
+    return True
+
+
 def ensure_stanford_cars_split(root: Path, split: str) -> None:
     base = root / "stanford_cars"
     base.mkdir(parents=True, exist_ok=True)
-    _download_and_extract_archive, download_url, extract_archive = load_torchvision_dataset_utils()
+    _download_and_extract_archive, _download_url, extract_archive = load_torchvision_dataset_utils()
 
     devkit_path = base / "devkit"
     if not (devkit_path / "cars_train_annos.mat").is_file() or not (
         devkit_path / "cars_meta.mat"
     ).is_file():
         print("Downloading Stanford Cars devkit")
-        download_url(
-            STANFORD_CARS_FILES["car_devkit.tgz"],
-            root=str(base),
-            filename="car_devkit.tgz",
-        )
+        download_stanford_cars_file("car_devkit.tgz", base)
         extract_archive(str(base / "car_devkit.tgz"), str(base))
 
     if split == "train" and not (base / "cars_train").is_dir():
         print("Downloading Stanford Cars train images")
-        download_url(
-            STANFORD_CARS_FILES["cars_train.tgz"],
-            root=str(base),
-            filename="cars_train.tgz",
-        )
+        download_stanford_cars_file("cars_train.tgz", base)
         extract_archive(str(base / "cars_train.tgz"), str(base))
 
     if split == "test":
         if not (base / "cars_test").is_dir():
             print("Downloading Stanford Cars test images")
-            download_url(
-                STANFORD_CARS_FILES["cars_test.tgz"],
-                root=str(base),
-                filename="cars_test.tgz",
-            )
+            download_stanford_cars_file("cars_test.tgz", base)
             extract_archive(str(base / "cars_test.tgz"), str(base))
 
         if not (base / "cars_test_annos_withlabels.mat").is_file():
             print("Downloading Stanford Cars test labels")
-            download_url(
-                STANFORD_CARS_FILES["cars_test_annos_withlabels.mat"],
-                root=str(base),
-                filename="cars_test_annos_withlabels.mat",
-            )
+            download_stanford_cars_file("cars_test_annos_withlabels.mat", base)
 
 
 def download_dataset(dataset: str, root: Path, split: str) -> None:
