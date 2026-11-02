@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import caltech101, fgvc_aircraft, oxford_pet, stanford_cars
+from . import caltech101, fgvc_aircraft, imagenette, oxford_pet, stanford_cars
 
 
 DATASET_LOADERS = {
@@ -19,6 +19,8 @@ DATASET_LOADERS = {
     "fgvc_aircraft": fgvc_aircraft.get_dataset,
     "fgvc-aircraft": fgvc_aircraft.get_dataset,
     "aircraft": fgvc_aircraft.get_dataset,
+    "imagenette": imagenette.get_dataset,
+    "image-nette": imagenette.get_dataset,
     "stanford_cars": stanford_cars.get_dataset,
     "stanford-cars": stanford_cars.get_dataset,
     "cars": stanford_cars.get_dataset,
@@ -32,7 +34,13 @@ def get_dataset(dataset_name: str, **kwargs):
         loader = DATASET_LOADERS[normalized_name]
     except KeyError as exc:
         options = ", ".join(
-            ["oxford_pet", "caltech101", "fgvc_aircraft", "stanford_cars"]
+            [
+                "oxford_pet",
+                "caltech101",
+                "fgvc_aircraft",
+                "stanford_cars",
+                "imagenette",
+            ]
         )
         raise ValueError(
             f"Unknown dataset '{dataset_name}'. Choose one of: {options}."

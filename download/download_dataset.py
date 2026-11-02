@@ -13,6 +13,8 @@ from urllib.error import HTTPError, URLError
 DEFAULT_ROOT = Path(__file__).resolve().parents[1] / "data"
 CALTECH101_URL = "https://data.caltech.edu/records/mzrjq-6wc02/files/caltech-101.zip"
 CALTECH101_MD5 = "3138e1922a9193bfa496528edbbc45d0"
+IMAGENETTE_SIZE = "320px"
+IMAGENETTE_DIRECTORY = "imagenette2-320"
 STANFORD_CARS_FILES = {
     "cars_train.tgz": (
         "http://ai.stanford.edu/~jkrause/car196/cars_train.tgz",
@@ -50,6 +52,8 @@ ALIASES = {
     "fgvc_aircraft": "fgvc_aircraft",
     "fgvc-aircraft": "fgvc_aircraft",
     "aircraft": "fgvc_aircraft",
+    "imagenette": "imagenette",
+    "image-nette": "imagenette",
     "stanford_cars": "stanford_cars",
     "stanford-cars": "stanford_cars",
     "cars": "stanford_cars",
@@ -59,6 +63,7 @@ DISPLAY_NAMES = {
     "oxford_pet": "Oxford-IIIT Pet",
     "caltech101": "Caltech101",
     "fgvc_aircraft": "FGVC Aircraft",
+    "imagenette": "Imagenette",
     "stanford_cars": "Stanford Cars",
 }
 
@@ -66,6 +71,7 @@ VALID_SPLITS = {
     "oxford_pet": ("trainval", "test", "all"),
     "caltech101": ("all",),
     "fgvc_aircraft": ("trainval", "train", "val", "test", "all"),
+    "imagenette": ("train", "val", "all"),
     "stanford_cars": ("train", "test", "all"),
 }
 
@@ -73,6 +79,7 @@ ALL_SPLITS = {
     "oxford_pet": ("trainval", "test"),
     "caltech101": (None,),
     "fgvc_aircraft": ("trainval", "test"),
+    "imagenette": ("train", "val"),
     "stanford_cars": ("train", "test"),
 }
 
@@ -88,7 +95,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "dataset",
         metavar="dataset",
-        help="Dataset to download: oxford_pet, caltech101, fgvc_aircraft, stanford_cars.",
+        help=(
+            "Dataset to download: oxford_pet, caltech101, fgvc_aircraft, "
+            "stanford_cars, imagenette."
+        ),
     )
     parser.add_argument(
         "--root",
@@ -177,6 +187,9 @@ def dataset_split_exists(dataset: str, root: Path, split: str | None) -> bool:
             and (base / f"images_variant_{split}.txt").is_file()
         )
 
+    if dataset == "imagenette":
+        return (root / IMAGENETTE_DIRECTORY / str(split)).is_dir()
+
     if dataset == "stanford_cars":
         base = root / "stanford_cars"
         if split == "train":
@@ -213,6 +226,13 @@ def instantiate_dataset(datasets, dataset: str, root: Path, split: str | None, d
             root=str(root),
             split=split,
             annotation_level="variant",
+            download=download,
+        )
+    if dataset == "imagenette":
+        return datasets.Imagenette(
+            root=str(root),
+            split=split,
+            size=IMAGENETTE_SIZE,
             download=download,
         )
     if dataset == "stanford_cars":

@@ -16,3 +16,4 @@ fi
 "${PYTHON}" "${DOWNLOAD_SCRIPT}" caltech101 --root "${DATA_ROOT}" --split all
 "${PYTHON}" "${DOWNLOAD_SCRIPT}" fgvc_aircraft --root "${DATA_ROOT}" --split all
 "${PYTHON}" "${DOWNLOAD_SCRIPT}" stanford_cars --root "${DATA_ROOT}" --split all
+"${PYTHON}" "${DOWNLOAD_SCRIPT}" imagenette --root "${DATA_ROOT}" --split all
