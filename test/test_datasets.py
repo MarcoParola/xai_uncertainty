@@ -20,6 +20,7 @@ DATASETS = (
     "caltech101",
     "fgvc_aircraft",
     "stanford_cars",
+    "imagenette",
 )
 
 
