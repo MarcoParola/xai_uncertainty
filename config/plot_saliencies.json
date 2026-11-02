@@ -5,7 +5,7 @@
   "output_dir": "outputs/plots",
   "directory_template": "{dataset}/{checkpoint}/{model}/{method}/{target}",
   "target": "true",
-  "methods": ["gradcam", "gradcampp", "lime", "rise"],
+  "methods": ["cam", "gradcam", "xgradcam", "lrp", "gradcampp", "ablationcam", "scorecam", "lime"],
   "seed": 0,
   "checkpoint_stem": null,
   "checkpoint_offsets": null,

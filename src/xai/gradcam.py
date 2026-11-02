@@ -8,26 +8,18 @@ from torch.nn import functional as F
 
 from .base import (
     SaliencyMethod,
+    capture_activations,
+    find_spatial_target_layer,
     gather_scores,
     model_device,
-    normalize_maps,
     upsample_to_input,
     validate_images,
 )
 
 
 def find_last_conv2d(model: nn.Module) -> nn.Module:
-    last_conv = None
-    for module in model.modules():
-        if isinstance(module, nn.Conv2d):
-            last_conv = module
-
-    if last_conv is None:
-        raise ValueError(
-            "Could not automatically find a Conv2d layer for Grad-CAM. "
-            "Pass target_layer explicitly."
-        )
-    return last_conv
+    """Backward-compatible alias for CNN target-layer discovery."""
+    return find_spatial_target_layer(model)
 
 
 class GradCAM(SaliencyMethod):
@@ -45,53 +37,47 @@ class GradCAM(SaliencyMethod):
         validate_images(images)
         device = model_device(self.model)
         images = images.to(device)
-        activations, gradients = self._activations_and_gradients(images, targets)
-        weights = self._weights(activations, gradients)
+        activations, gradients, target_scores = self._activations_and_gradients(
+            images, targets
+        )
+        weights = self._weights(activations, gradients, target_scores)
         cam = (weights * activations).sum(dim=1, keepdim=True)
         cam = upsample_to_input(F.relu(cam), images)
-        return normalize_maps(cam).detach()
+        return cam.detach()
 
-    def _weights(self, _activations: torch.Tensor, gradients: torch.Tensor) -> torch.Tensor:
+    def _weights(
+        self,
+        _activations: torch.Tensor,
+        gradients: torch.Tensor,
+        _target_scores: torch.Tensor,
+    ) -> torch.Tensor:
         return gradients.mean(dim=(2, 3), keepdim=True)
 
     def _activations_and_gradients(
         self,
         images: torch.Tensor,
         targets: torch.Tensor | None,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        device = model_device(self.model)
-        target_layer = self.target_layer or find_last_conv2d(self.model)
-        captured_activations = None
-        captured_gradients = None
-
-        def forward_hook(_module, _inputs, output):
-            nonlocal captured_activations
-            captured_activations = output
-
-        def backward_hook(_module, _grad_inputs, grad_outputs):
-            nonlocal captured_gradients
-            captured_gradients = grad_outputs[0]
-
-        handles = [
-            target_layer.register_forward_hook(forward_hook),
-            target_layer.register_full_backward_hook(backward_hook),
-        ]
-
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        target_layer = self.target_layer or find_spatial_target_layer(self.model)
         was_training = self.model.training
         self.model.eval()
         self.model.zero_grad(set_to_none=True)
 
         try:
-            logits = self.model(images)
-            targets = logits.argmax(dim=1) if targets is None else targets.to(device)
-            gather_scores(logits, targets).sum().backward()
-
-            if captured_activations is None or captured_gradients is None:
-                raise RuntimeError("CAM hooks did not capture activations/gradients.")
-            return captured_activations, captured_gradients
+            activations, logits = capture_activations(self.model, target_layer, images)
+            targets = (
+                logits.argmax(dim=1)
+                if targets is None
+                else targets.to(device=images.device, dtype=torch.long)
+            )
+            target_scores = gather_scores(logits, targets)
+            gradients = torch.autograd.grad(
+                target_scores.sum(),
+                activations,
+                retain_graph=False,
+            )[0]
+            return activations.detach(), gradients.detach(), target_scores.detach()
         finally:
-            for handle in handles:
-                handle.remove()
             self.model.zero_grad(set_to_none=True)
             if was_training:
                 self.model.train()
@@ -100,19 +86,29 @@ class GradCAM(SaliencyMethod):
 class GradCAMPlusPlus(GradCAM):
     """Generate Grad-CAM++ maps for a batch of images."""
 
+    score_type = "exp_logit"
+
     def _weights(
         self,
         activations: torch.Tensor,
         gradients: torch.Tensor,
+        target_scores: torch.Tensor,
     ) -> torch.Tensor:
-        grad_sq = gradients.pow(2)
-        grad_cube = gradients.pow(3)
-        denominator = 2.0 * grad_sq + (activations * grad_cube).sum(
-            dim=(2, 3),
-            keepdim=True,
+        exponentiated_score = target_scores.exp().view(-1, 1, 1, 1)
+        first_derivative = exponentiated_score * gradients
+        second_derivative = first_derivative * gradients
+        third_derivative = second_derivative * gradients
+        denominator = 2.0 * second_derivative + third_derivative * activations.sum(
+            dim=(2, 3), keepdim=True
         )
-        alphas = grad_sq / (denominator + 1e-8)
-        return (alphas * F.relu(gradients)).sum(dim=(2, 3), keepdim=True)
+        alphas = torch.where(
+            second_derivative != 0,
+            second_derivative / (denominator + 1e-8),
+            torch.zeros_like(second_derivative),
+        )
+        return (alphas * F.relu(first_derivative)).sum(
+            dim=(2, 3), keepdim=True
+        )
 
 
 class XGradCAM(GradCAM):
@@ -122,6 +118,7 @@ class XGradCAM(GradCAM):
         self,
         activations: torch.Tensor,
         gradients: torch.Tensor,
+        _target_scores: torch.Tensor,
     ) -> torch.Tensor:
         numerator = (gradients * activations).sum(dim=(2, 3), keepdim=True)
         denominator = activations.sum(dim=(2, 3), keepdim=True)
@@ -142,7 +139,7 @@ class GuidedGradCAM(GradCAM):
         cam = super().generate(images, targets=targets)
         guided_grads = self._guided_backprop(images, targets)
         saliency = cam * guided_grads.abs().mean(dim=1, keepdim=True)
-        return normalize_maps(saliency).detach()
+        return saliency.detach()
 
     def _guided_backprop(
         self,

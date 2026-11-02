@@ -1,91 +1,50 @@
-"""Grid-mask LIME saliency maps."""
+"""Original image-LIME saliency maps."""
 
 from __future__ import annotations
 
+import numpy as np
 import torch
 from torch import nn
-from torch.nn import functional as F
 
-from .base import (
-    SaliencyMethod,
-    infer_targets,
-    model_device,
-    normalize_maps,
-    validate_images,
-)
+from .base import SaliencyMethod, model_device, validate_images
 
 
 class LIME(SaliencyMethod):
-    """LIME-style local explanation using grid patches as interpretable features."""
+    """Explain image predictions with the reference LIME image implementation."""
+
+    score_type = "probability"
 
     def __init__(
         self,
         model: nn.Module,
         n_samples: int = 1000,
-        grid_size: tuple[int, int] = (7, 7),
-        p: float = 0.5,
         kernel_width: float = 0.25,
         batch_size: int = 64,
-        ridge: float = 1e-3,
-        baseline: float = 0.0,
-        positive_only: bool = True,
-        use_softmax: bool = True,
+        random_seed: int = 42,
+        mean: tuple[float, float, float] = (0.485, 0.456, 0.406),
+        std: tuple[float, float, float] = (0.229, 0.224, 0.225),
     ) -> None:
         super().__init__(model)
+        if n_samples < 1 or batch_size < 1:
+            raise ValueError("n_samples and batch_size must be positive.")
+        try:
+            from lime.lime_image import LimeImageExplainer
+        except ImportError as exc:
+            raise ImportError(
+                "Image LIME requires the 'lime' package. Install the project "
+                "requirements first."
+            ) from exc
+
         self.n_samples = n_samples
-        self.grid_size = grid_size
-        self.p = p
-        self.kernel_width = kernel_width
         self.batch_size = batch_size
-        self.ridge = ridge
-        self.baseline = baseline
-        self.positive_only = positive_only
-        self.use_softmax = use_softmax
-
-    def sample_feature_masks(self, device: torch.device) -> torch.Tensor:
-        n_features = self.grid_size[0] * self.grid_size[1]
-        masks = torch.bernoulli(
-            torch.full((self.n_samples, n_features), self.p, device=device)
-        )
-        masks[0].fill_(1.0)
-        return masks
-
-    def masks_to_images(
-        self,
-        feature_masks: torch.Tensor,
-        height: int,
-        width: int,
-    ) -> torch.Tensor:
-        masks = feature_masks.view(-1, 1, *self.grid_size)
-        return F.interpolate(
-            masks,
-            size=(height, width),
-            mode="nearest",
+        self.random_seed = random_seed
+        self.mean = torch.tensor(mean).view(1, 3, 1, 1)
+        self.std = torch.tensor(std).view(1, 3, 1, 1)
+        self.explainer = LimeImageExplainer(
+            kernel_width=kernel_width,
+            random_state=random_seed,
         )
 
-    def kernel_weights(self, feature_masks: torch.Tensor) -> torch.Tensor:
-        distances = 1.0 - feature_masks.mean(dim=1)
-        return torch.exp(-(distances**2) / (self.kernel_width**2))
-
-    def fit_weighted_ridge(
-        self,
-        feature_masks: torch.Tensor,
-        scores: torch.Tensor,
-        weights: torch.Tensor,
-    ) -> torch.Tensor:
-        ones = torch.ones(feature_masks.size(0), 1, device=feature_masks.device)
-        design = torch.cat([ones, feature_masks], dim=1)
-        weighted_design = design * weights.sqrt().unsqueeze(1)
-        weighted_scores = scores * weights.sqrt()
-        penalty = torch.eye(design.size(1), device=design.device) * self.ridge
-        penalty[0, 0] = 0.0
-
-        lhs = weighted_design.T @ weighted_design + penalty
-        rhs = weighted_design.T @ weighted_scores
-        coefficients = torch.linalg.solve(lhs, rhs)
-        return coefficients[1:]
-
-    @torch.no_grad()
     def generate(
         self,
         images: torch.Tensor,
@@ -94,51 +53,61 @@ class LIME(SaliencyMethod):
         validate_images(images)
         device = model_device(self.model)
         images = images.to(device)
-        batch_size, _channels, height, width = images.shape
-
         was_training = self.model.training
         self.model.eval()
 
-        if targets is None:
-            targets = infer_targets(self.model, images)
-        else:
-            targets = targets.to(device)
+        try:
+            if targets is None:
+                with torch.no_grad():
+                    targets = self.model(images).argmax(dim=1)
+            else:
+                targets = targets.to(device=device, dtype=torch.long)
 
-        saliency_maps = []
-        for image, target in zip(images, targets):
-            feature_masks = self.sample_feature_masks(device)
-            image_masks = self.masks_to_images(feature_masks, height, width)
-            scores = []
+            rgb_images = self._to_rgb(images)
+            maps = [
+                self._explain_image(image, int(target))
+                for image, target in zip(rgb_images, targets)
+            ]
+            return torch.stack(maps).unsqueeze(1).to(device)
+        finally:
+            if was_training:
+                self.model.train()
 
-            for start in range(0, self.n_samples, self.batch_size):
-                current_masks = image_masks[start : start + self.batch_size]
-                perturbed = image.unsqueeze(0) * current_masks
-                if self.baseline != 0:
-                    perturbed = perturbed + self.baseline * (1.0 - current_masks)
+    def _to_rgb(self, images: torch.Tensor) -> np.ndarray:
+        mean = self.mean.to(device=images.device, dtype=images.dtype)
+        std = self.std.to(device=images.device, dtype=images.dtype)
+        rgb = (images * std + mean).clamp(0, 1)
+        return rgb.permute(0, 2, 3, 1).detach().cpu().numpy().astype(np.float64)
 
-                logits = self.model(perturbed)
-                if self.use_softmax:
-                    logits = logits.softmax(dim=1)
-                scores.append(logits[:, target])
+    def _predict_probabilities(self, images: np.ndarray) -> np.ndarray:
+        device = model_device(self.model)
+        tensor = torch.from_numpy(images).permute(0, 3, 1, 2).to(
+            device=device,
+            dtype=torch.float32,
+        )
+        mean = self.mean.to(device=device, dtype=tensor.dtype)
+        std = self.std.to(device=device, dtype=tensor.dtype)
+        tensor = (tensor - mean) / std
+        with torch.no_grad():
+            probabilities = self.model(tensor).softmax(dim=1)
+        return probabilities.cpu().numpy()
 
-            scores_tensor = torch.cat(scores)
-            weights = self.kernel_weights(feature_masks)
-            coefficients = self.fit_weighted_ridge(feature_masks, scores_tensor, weights)
-
-            if self.positive_only:
-                coefficients = coefficients.clamp_min(0)
-
-            low_res_map = coefficients.view(1, 1, *self.grid_size)
-            saliency = F.interpolate(
-                low_res_map,
-                size=(height, width),
-                mode="nearest",
-            )
-            saliency_maps.append(saliency)
-
-        if was_training:
-            self.model.train()
-        return normalize_maps(torch.cat(saliency_maps, dim=0))
+    def _explain_image(self, image: np.ndarray, target: int) -> torch.Tensor:
+        explanation = self.explainer.explain_instance(
+            image,
+            self._predict_probabilities,
+            labels=(target,),
+            top_labels=None,
+            num_features=image.shape[0] * image.shape[1],
+            num_samples=self.n_samples,
+            batch_size=self.batch_size,
+            random_seed=self.random_seed,
+        )
+        coefficients = dict(explanation.local_exp[target])
+        saliency = np.zeros(explanation.segments.shape, dtype=np.float32)
+        for segment, coefficient in coefficients.items():
+            saliency[explanation.segments == segment] = coefficient
+        return torch.from_numpy(saliency)
 
 
 __all__ = ["LIME"]

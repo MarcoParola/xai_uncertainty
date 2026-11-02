@@ -1,4 +1,8 @@
 """Uncertainty metric implementations."""
 
-# TODO GALA: export uncertainty metrics here once implemented.
+from .brier import brier_score
+from .entropy import entropy
+from .nll import nll
+
+__all__ = ["entropy", "brier_score", "nll"]
 

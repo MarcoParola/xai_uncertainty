@@ -241,9 +241,11 @@ def ensure_caltech101_annotations(root: Path) -> None:
 
     gzip_folder = base / "caltech-101"
     if gzip_folder.is_dir():
-        for gzip_file in gzip_folder.iterdir():
-            if gzip_file.suffix == ".gz":
-                extract_archive(str(gzip_file), str(base))
+        for archive_path in gzip_folder.iterdir():
+            if archive_path.name.startswith("._"):
+                continue
+            if archive_path.suffix in {".gz", ".tar", ".tgz"}:
+                extract_archive(str(archive_path), str(base))
         shutil.rmtree(gzip_folder)
 
     zip_path = base / "caltech-101.zip"

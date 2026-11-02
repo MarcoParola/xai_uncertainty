@@ -10,7 +10,6 @@ from .base import (
     SaliencyMethod,
     infer_targets,
     model_device,
-    normalize_maps,
     validate_images,
 )
 
@@ -105,7 +104,7 @@ class RISE(SaliencyMethod):
         saliency = saliency / (self.n_masks * max(self.p, 1e-8))
         if was_training:
             self.model.train()
-        return normalize_maps(saliency)
+        return saliency
 
 
 __all__ = ["RISE"]
